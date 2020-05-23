@@ -1,0 +1,4 @@
+#!/bin/sh
+
+python3 pyc.py kernel.py
+sudo qemu-system-x86_64 -kernel kernel.pyc
