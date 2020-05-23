@@ -1,0 +1,8 @@
+#!/bin/bash
+
+as --32 boot.S -o boot.o
+g++ -m32 -c kernel.cpp -o kernel.o
+ld -m elf_i386 -T linker.ld kernel.o boot.o -o loader.bin -nostdlib
+cp loader.bin stor/boot
+cp grub.cfg stor/boot/grub
+grub-mkrescue -o loader.iso stor
