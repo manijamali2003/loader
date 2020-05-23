@@ -38,7 +38,7 @@ uint32 vga_index;
 static uint32 next_line_index = 1;
 //fore & back color values
 uint8 g_fore_color = WHITE, g_back_color = BLUE;
-//digit ascii code for pyc_printing integers
+//digit ascii code for printing integers
 int digit_ascii_codes[10] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39};
 
 /*
@@ -48,7 +48,7 @@ int digit_ascii_codes[10] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x3
   higher 4 bits - back color
 
 8 bits(al) lower :
-  8 bits : ASCII character to pyc_print
+  8 bits : ASCII character to print
 */
 uint16 vga_entry(unsigned char ch, uint8 fore_color, uint8 back_color)
 {
@@ -100,7 +100,7 @@ void print_new_line()
 }
 
 //assign ascii character to video buffer
-void pyc_print_char(char ch)
+void print_char(char ch)
 {
   vga_buffer[vga_index] = vga_entry(ch, g_fore_color, g_back_color);
   vga_index++;
@@ -146,24 +146,41 @@ void itoa(int num, char *number)
   }
 }
 
-//pyc_print string by calling pyc_print_char
-void pyc_print(char *str)
+
+/* Kernel function */
+
+void kprint (char *str)
 {
   uint32 index = 0;
   while(str[index]){
-    pyc_print_char(str[index]);
+    print_char(str[index]);
     index++;
   }
   print_new_line();
 }
 
-//pyc_print int by converting it into string
-//& then pyc_printing string
-void pyc_print_int(int num)
+void kprint_int (int num)
 {
   char str_num[digit_count(num)+1];
   itoa(num, str_num);
-  pyc_print(str_num);
+  kprint (str_num);
+}
+
+void kprint_float (double num)
+{
+  char str_num[digit_count(num)+1];
+  itoa(num, str_num);
+  kprint (str_num);
+}
+
+void kclear ()
+{
+    init_vga(WHITE, BLUE);
+}
+
+void kcolor (int fgcolor,int bgcolor)
+{
+    init_vga(fgcolor,bgcolor);
 }
 
 #endif

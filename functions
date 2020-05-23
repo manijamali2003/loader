@@ -1,0 +1,7 @@
+Standard Python kernel functions
+
+kprint ('')
+kprint_int (1234)
+kprint_float (3.141592)
+kclear()
+kcolor (WHITE,BLACK)

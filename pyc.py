@@ -16,21 +16,23 @@ for i in strv:
     if i.startswith ("#"):
         i = ''
 
-    ## Print function ##
-    elif i.startswith ('print'):
-        i = i.replace ("print","pyc_print")
+    elif i.__contains__("(") and i.__contains__(")") and not i.__contains__('def'):
+        # hello ()
+        # pyc_hello ()
+        # pyc_hello ();
+        i = i.replace("'",'"')+";"
 
-        ## Empty print function ##
-        if i.__contains__("()"):
-            i = i.replace ('()','("");')
+    elif i.__contains__("="):
+        # i = 0
+        i = i.split("=")
 
-        ## One ' replace " ##
-        if i.__contains__ ("'"):
-            i = i.replace("'",'"')
-
-        ## Ends of function ##
-        if i.endswith (")"):
-            i = i.replace (")",");")
+        ## Check numberic variable ##
+        if not (i[1].__contains__('"') or i[1].__contains__("'")) and not i[1].__contains__("."):
+            i = "long " + i[0] + " = " + i[1] + ";"
+        elif not (i[1].__contains__('"') or i[1].__contains__("'")) and i[1].__contains__("."):
+            i = "double " + i[0] + " = " + i[1] +";"
+        else:
+            i = "char* "+i[0]+" = \""+i[1].replace("'","").replace('"',"")+"\";"
 
     sstrv = sstrv + "\n" + i
 
@@ -152,15 +154,15 @@ file.close()
 os.system ("as --32 boot.s -o boot.o")
 
 ## Compile kernel.c ##
-os.system ("gcc -m32 -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra")
+os.system ("gcc -m32 -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra".replace("kernel.c",python_file.replace(".py",".c")))
 
 ## Link the compiled files ##
-os.system ("ld -m elf_i386 -T linker.ld kernel.o boot.o -o loader.pyc -nostdlib".replace("loader",python_file.replace(".py","")))
+os.system ("ld -m elf_i386 -T linker.ld kernel.o boot.o -o loader.pyc -nostdlib".replace('kernel.o',python_file.replace(".py",".o")).replace("loader.pyc",python_file.replace(".py",".pyc")))
 
 ## Remove Boot and kernel file and ld file ##
 
-os.remove ("kernel.c")
+os.remove (python_file.replace(".py",".c"))
 os.remove ("boot.s")
 os.remove ("linker.ld")
-os.remove ("kernel.o")
+os.remove (python_file.replace(".py",".o"))
 os.remove ("boot.o")
