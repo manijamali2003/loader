@@ -1,6 +1,6 @@
 In the name of God, the Compassionate, the Mericful
 
-Python kernel compiler and Loader (c) 2020 Mani Jamali. Free Software MIT License
+Python kernel compiler and Loader (c) 2020 Mani Jamali. Free GNU General Public License v3.0
 
 # How to compile my Python code to kernel binary?
 

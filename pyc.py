@@ -154,15 +154,19 @@ file.close()
 os.system ("as --32 boot.s -o boot.o")
 
 ## Compile kernel.c ##
+os.system ("gcc -m32 -c char.c -o char.o -std=gnu99 -ffreestanding -O1 -Wall -Wextra")
+os.system ("gcc -m32 -c utils.c -o utils.o -std=gnu99 -ffreestanding -O1 -Wall -Wextra")
 os.system ("gcc -m32 -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra".replace("kernel.c",python_file.replace(".py",".c")))
 
 ## Link the compiled files ##
-os.system ("ld -m elf_i386 -T linker.ld kernel.o boot.o -o loader.pyc -nostdlib".replace('kernel.o',python_file.replace(".py",".o")).replace("loader.pyc",python_file.replace(".py",".pyc")))
+os.system ("ld -m elf_i386 -T linker.ld kernel.o utils.o char.o boot.o boot.o -o loader.pyc -nostdlib".replace('kernel.o',python_file.replace(".py",".o")).replace("loader.pyc",python_file.replace(".py",".pyc")))
 
 ## Remove Boot and kernel file and ld file ##
 
 os.remove (python_file.replace(".py",".c"))
 os.remove ("boot.s")
+os.remove ("utils.s")
+os.remove ("char.s")
 os.remove ("linker.ld")
 os.remove (python_file.replace(".py",".o"))
 os.remove ("boot.o")
