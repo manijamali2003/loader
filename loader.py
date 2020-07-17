@@ -3,7 +3,7 @@
     Loader Os (c) 2020 Mani Jamali. All rights reserved
 '''
 
-import os,sys,subprocess
+import os,sys,subprocess,random
 
 ## Kernel driver ##
 class kernel:
@@ -68,35 +68,70 @@ class vga:
     yellow = 14
     white = 15
 
+    fgcolor = 15
+    bgcolor = 0
+
     ## Clear screen ##
     def clear (self):
 
         ## Write into kernel ##
         file = open ('core/kernel.tmp','a')
-        file.write ('init_vga (WHITE,BLACK);')
+        file.write ('init_vga ('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
     ## Color ##
     def color (self,bg,fg):
         ## Write into kernel ##
         file = open('core/kernel.tmp', 'a')
-        file.write('init_vga ({0},{1});'.replace('{0}',str(fg)).replace('{1}',str(bg)))
+        file.write('init_vga ('+str(fg)+','+str(bg)+');')
         file.close()
+
+        self.bgcolor = bg
+        self.fgcolor = fg
 
     ## Print ##
     def print (self,text):
         file = open('core/kernel.tmp', 'a')
-        file.write('print_string("'+text+'");')
+        file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
     ## Print with line ##
     def println (self,text):
         file = open('core/kernel.tmp', 'a')
-        file.write('print_string("' + text + '");print_new_line();')
+        file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
     ## Print a new line ##
     def newline (self):
         file = open('core/kernel.tmp', 'a')
-        file.write('print_new_line();')
+        file.write('print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
+        file.close()
+
+## Time driver ##
+class time:
+
+    ## Sleep in io ##
+    def sleep (self,times):
+        file = open('core/kernel.tmp', 'a')
+        file.write('sleep ('+str(times)+');')
+        file.close()
+        
+    ## Start loop ##
+    def startloop (self,start,end):
+        ra = random.randint (1,1000)
+        self.ra = ra
+        file = open('core/kernel.tmp', 'a')
+        file.write('unsigned long _loop_variable_{0} = {1};while (_loop_variable_{0} <= {2}){'.replace('{0}',str(ra)).replace('{1}',str(start)).replace('{2}',str(end)))
+        file.close()
+
+    ## End loop ##
+    def endloop (self):
+        file = open('core/kernel.tmp', 'a')
+        file.write('}')
+        file.close()
+
+    ## Counter for loop ##
+    def counter (self,number):
+        file = open('core/kernel.tmp', 'a')
+        file.write('_loop_variable_'+str(self.ra)+" = _loop_variable_"+str(self.ra)+' + '+str(number)+";")
         file.close()

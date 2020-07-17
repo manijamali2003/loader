@@ -44,8 +44,6 @@ enum vga_color {
 uint32 vga_index;
 //counter to store new lines
 static uint32 next_line_index = 1;
-//fore & back color values
-uint8 g_fore_color = WHITE, g_back_color = BLUE;
 //digit ascii code for printing integers
 int digit_ascii_codes[10] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39};
 
@@ -83,7 +81,7 @@ void init_vga(uint8 fore_color, uint8 back_color)
 /*
 increase vga_index by width of row(80)
 */
-void print_new_line()
+void print_new_line(int g_fore_color,int g_back_color)
 {
   if(next_line_index >= 55){
     next_line_index = 0;
@@ -94,7 +92,7 @@ void print_new_line()
 }
 
 //assign ascii character to video buffer
-void print_char(char ch)
+void print_char(char ch,int g_fore_color,int g_back_color)
 {
   vga_buffer[vga_index] = vga_entry(ch, g_fore_color, g_back_color);
   vga_index++;
@@ -141,14 +139,28 @@ void itoa(int num, char *number)
 }
 
 //print string by calling print_char
-void print_string(char *str)
+void print_string(char *str,int fg, int bg)
 {
   uint32 index = 0;
   while(str[index]){
-    print_char(str[index]);
+    print_char(str[index],fg,bg);
     index++;
   }
 }
 
+void wait_for_io(uint32 timer_count)
+{
+  while(1){
+    asm volatile("nop");
+    timer_count--;
+    if(timer_count <= 0)
+      break;
+    }
+}
+
+void sleep(uint32 timer_count)
+{
+  wait_for_io(timer_count);
+}
 
 #endif

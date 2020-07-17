@@ -1,4 +1,4 @@
-from loader import kernel, vga
+from loader import kernel, vga, time
 import random
 
 k = kernel('kernel.bin')
@@ -6,13 +6,14 @@ k = kernel('kernel.bin')
 ## Use vga driver in kernel ##
 v = vga()
 v.clear() ## Clear screen
-v.color(vga.blue,vga.white) ## Color blue and white
+v.color(vga.black,vga.green) ## Color blue and white
 
-while True:
-    i = random.randint(1,20)
-    v.print(str(i))
-    if i==20: break
-    v.color(i,i)
+t = time()
+
+t.startloop(20,1)
+v.println('Hello World!')
+i = t.counter(-20)
+t.endloop()
 
 k.generate() # Build the kernel ##
 k.run() ## Run the kernel ##
