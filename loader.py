@@ -5,6 +5,7 @@
 
 import os,sys,subprocess
 
+## Kernel driver ##
 class kernel:
     name = ''
     def __init__(self,name):
@@ -48,6 +49,7 @@ void kernel_entry()
         ## Run the kernel ##
         subprocess.call(['qemu-system-i386', '-kernel', self.name])
 
+## VGA Driver ##
 class vga:
     black = 0
     blue = 1
@@ -85,4 +87,16 @@ class vga:
     def print (self,text):
         file = open('core/kernel.tmp', 'a')
         file.write('print_string("'+text+'");')
+        file.close()
+
+    ## Print with line ##
+    def println (self,text):
+        file = open('core/kernel.tmp', 'a')
+        file.write('print_string("' + text + '");print_new_line();')
+        file.close()
+
+    ## Print a new line ##
+    def newline (self):
+        file = open('core/kernel.tmp', 'a')
+        file.write('print_new_line();')
         file.close()
