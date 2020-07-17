@@ -7,8 +7,10 @@ import os,sys,subprocess
 
 class kernel:
     name = ''
-    def set_name (self,name):
+    def __init__(self,name):
         self.name = name
+
+        if os.path.isfile('core/kernel.tmp'): os.remove('core/kernel.tmp')
 
     def generate(self):
         ## kernel.c
@@ -77,4 +79,10 @@ class vga:
         ## Write into kernel ##
         file = open('core/kernel.tmp', 'a')
         file.write('init_vga ({0},{1});'.replace('{0}',str(fg)).replace('{1}',str(bg)))
+        file.close()
+
+    ## Print ##
+    def print (self,text):
+        file = open('core/kernel.tmp', 'a')
+        file.write('print_string("'+text+'");')
         file.close()
