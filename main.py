@@ -1,19 +1,28 @@
-from loader import kernel, vga, time
+from loader import kernel, vga, time, address, colors, show_type
 import random
 
 k = kernel('kernel.bin')
 
 ## Use vga driver in kernel ##
-v = vga()
+v = vga(); t = time()
 v.clear() ## Clear screen
-v.color(vga.black,vga.green) ## Color blue and white
 
-t = time()
+## Show prompt ##
 
-t.startloop(20,1)
-v.println('Hello World!')
-i = t.counter(-20)
-t.endloop()
+v.clear()
+v.show_message('distro',show_type.ok_start,'')
+
+a = address()
+
+a.add('com.app')
+a.write('Loader Os')
+a.save()
+
+a.open('com.app')
+a.write('Hey')
+a.append()
+
+v.addshow('com.app')
 
 k.generate() # Build the kernel ##
 k.run() ## Run the kernel ##

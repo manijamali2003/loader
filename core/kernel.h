@@ -98,7 +98,6 @@ void print_char(char ch,int g_fore_color,int g_back_color)
   vga_index++;
 }
 
-
 uint32 strlen(const char* str)
 {
   uint32 length = 0;
@@ -148,7 +147,7 @@ void print_string(char *str,int fg, int bg)
   }
 }
 
-void wait_for_io(uint32 timer_count)
+void wait_for_io(unsigned long long int timer_count)
 {
   while(1){
     asm volatile("nop");
@@ -158,7 +157,7 @@ void wait_for_io(uint32 timer_count)
     }
 }
 
-void sleep(uint32 timer_count)
+void sleep(unsigned long long int timer_count)
 {
   wait_for_io(timer_count);
 }
