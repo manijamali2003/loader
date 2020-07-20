@@ -87,6 +87,11 @@ void __stack_chk_fail(){} void kernel_entry()
         ## Run the kernel ##
         subprocess.call(['qemu-system-i386', '-kernel', self.name])
 
+    def define (self,type,name,value):
+        file = open('core/kernel.tmp', 'a')
+        file.write(type+' _switch_variable_'+name+"_ = "+value+";")
+        file.close()
+
 ## VGA Driver ##
 class vga:
 
@@ -113,15 +118,26 @@ class vga:
 
     ## Print ##
     def print (self,text):
-        file = open('core/kernel.tmp', 'a')
-        file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
-        file.close()
+        if text.startswith("$"):
+            file = open('core/kernel.tmp', 'a')
+            file.write('print_string(_switch_variable_' + text.replace('$','')+ '_,' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+            file.close()
+        else:
+            file = open('core/kernel.tmp', 'a')
+            file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
+            file.close()
 
     ## Print with line ##
     def println (self,text):
-        file = open('core/kernel.tmp', 'a')
-        file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
-        file.close()
+        if text.startswith ('$'):
+            file = open('core/kernel.tmp', 'a')
+            file.write('print_string(_switch_variable_' + text.replace('$','') + '_,' + str(self.fgcolor) + ',' + str(
+                self.bgcolor) + ');print_new_line(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+            file.close()
+        else:
+            file = open('core/kernel.tmp', 'a')
+            file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
+            file.close()
 
     ## Print a new line ##
     def newline (self):
@@ -129,10 +145,30 @@ class vga:
         file.write('print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
-    def addshow (self,name):
+    ## Print integer ##
+    def printint (self,num):
         file = open('core/kernel.tmp', 'a')
         file.write(
-            'print_string(_address_' + name.replace('.','_addr_') + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+            'print_int(' + str(num) + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
+                self.fgcolor) + ',' + str(self.bgcolor) + ');')
+        file.close()
+
+    ## Show integer variable ##
+    def showint (self,var):
+        file = open('core/kernel.tmp', 'a')
+        file.write(
+            'print_int(_switch_variable_' + str(var).replace('$','') + '_,' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
+                self.fgcolor) + ',' + str(self.bgcolor) + ');')
+        file.close()
+
+    ## Input int ##
+    def inputint (self,var,message):
+        file = open('core/kernel.tmp', 'a')
+        file.write(
+            'print_string ("'+str(message)+'",'+str(self.fgcolor)+','+str(self.bgcolor)+'); _switch_variable_'+
+            var.replace('$','')+'_ = read_int(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');'
+        )
+
         file.close()
 
     def show_message (self,name,type,message):
@@ -234,33 +270,25 @@ class time:
         file.write('_loop_variable_'+str(self.ra)+" = _loop_variable_"+str(self.ra)+' + '+str(number)+";")
         file.close()
 
-## Address driver ##
-class address:
-    name = ''
-    text = ''
-    ## Add address ##
-    def add (self,name):
-        file = open('core/kernel.tmp', 'a')
-        file.write('char* _address_' + str(name).replace('.','_addr_')+';')
-        file.close()
-        self.name = name
-
-    ## open #
-    def open (self,name):
-        self.name = name
-
-    ## Write function ##
-    def write (self,text):
-        self.text +=  text
-
-    ## Close the address ##
-    def save (self):
-        file = open('core/kernel.tmp', 'a')
-        file.write('_address_' + str(self.name).replace('.', '_addr_') + '= "'+self.text+"\";")
+class switch:
+    def start(self,name):
+        file = open('core/kernel_switchs.h', 'a')
+        file.write('void _switch_function_'+name+"_ (char* args){")
         file.close()
 
-    ## Append text ##
-    def append (self):
+    def end (self):
+        file = open('core/kernel_switchs.h', 'a')
+        file.write('}')
+        file.close()
+
+    def addnum (self,num,name):
         file = open('core/kernel.tmp', 'a')
-        file.write('_address_' + str(self.name).replace('.', '_addr_') + ' = "' + self.text + "\";")
+        file.write('''
+        case {num}:
+            _switch_function_{name}_ (\"\");
+            break;
+        '''
+                   .replace('{num}',str(num))
+                   .replace('{name}',name)
+                   )
         file.close()

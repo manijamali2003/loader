@@ -1,4 +1,4 @@
-from loader import kernel, vga, time, address, colors, show_type
+from loader import kernel, vga, time, colors, show_type
 import random
 
 k = kernel('kernel.bin')
@@ -10,8 +10,13 @@ v.clear() ## Clear screen
 ## Show prompt ##
 
 v.clear()
-v.show_message('distro',show_type.ok_start,'')
-t.sleep(10)
-v.println('Hello World!')
+v.println('In the name of God, the Compassionate, the Merciful.')
+v.println('Loader Os (c) 2020 Mani Jamali. Free Software GNU General Public License v3.0')
+k.define('int','i','0')
+t.startloop(1,1)
+v.inputint('$i','/: ')
+t.sleep(3)
+t.endloop()
+
 k.generate() # Build the kernel ##
 k.run() ## Run the kernel ##

@@ -218,7 +218,7 @@ int read_int(int bgcolor,int fgcolor)
       data[index] = ch;
       index++;
     }
-    sleep(CALC_SLEEP);
+    sleep(2);
   }while(ch > 0);
 
   return atoi(data);
