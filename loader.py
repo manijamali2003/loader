@@ -24,6 +24,10 @@ class colors:
     yellow = 14
     white = 15
 
+    # inside/switch #
+class sysinfo:
+    mode = 'inside'
+
 class show_type:
     ok_start = 0     # [ OK ] Start name process.
     ok_end = 1       # [ OK ] End name process.
@@ -39,11 +43,15 @@ class kernel:
         self.name = name
 
         if os.path.isfile('core/kernel.tmp'): os.remove('core/kernel.tmp')
+        if os.path.isfile('core/kernel_switchs.h'):
+            os.remove('core/kernel_switchs.h')
+            open ('core/kernel_switchs.h','w')
 
     def generate(self):
         ## kernel.c
         main_start = '''
 #include "kernel.h"
+#include "kernel_switchs.h"
 void __stack_chk_fail(){} void kernel_entry()
 {
         '''
@@ -88,7 +96,11 @@ void __stack_chk_fail(){} void kernel_entry()
         subprocess.call(['qemu-system-i386', '-kernel', self.name])
 
     def define (self,type,name,value):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write(type+' _switch_variable_'+name+"_ = "+value+";")
         file.close()
 
@@ -100,16 +112,23 @@ class vga:
 
     ## Clear screen ##
     def clear (self):
-
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
         ## Write into kernel ##
-        file = open ('core/kernel.tmp','a')
+        file = open (filename,'a')
         file.write ('init_vga ('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
     ## Color ##
     def color (self,bg,fg):
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
         ## Write into kernel ##
-        file = open('core/kernel.tmp', 'a')
+        file = open(filename, 'a')
         file.write('init_vga ('+str(fg)+','+str(bg)+');')
         file.close()
 
@@ -118,36 +137,52 @@ class vga:
 
     ## Print ##
     def print (self,text):
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
         if text.startswith("$"):
-            file = open('core/kernel.tmp', 'a')
+            file = open(filename, 'a')
             file.write('print_string(_switch_variable_' + text.replace('$','')+ '_,' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
             file.close()
         else:
-            file = open('core/kernel.tmp', 'a')
+            file = open(filename, 'a')
             file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
             file.close()
 
     ## Print with line ##
     def println (self,text):
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
         if text.startswith ('$'):
-            file = open('core/kernel.tmp', 'a')
+            file = open(filename, 'a')
             file.write('print_string(_switch_variable_' + text.replace('$','') + '_,' + str(self.fgcolor) + ',' + str(
                 self.bgcolor) + ');print_new_line(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
             file.close()
         else:
-            file = open('core/kernel.tmp', 'a')
+            file = open(filename, 'a')
             file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
             file.close()
 
     ## Print a new line ##
     def newline (self):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write('print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
     ## Print integer ##
     def printint (self,num):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write(
             'print_int(' + str(num) + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
                 self.fgcolor) + ',' + str(self.bgcolor) + ');')
@@ -155,7 +190,11 @@ class vga:
 
     ## Show integer variable ##
     def showint (self,var):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write(
             'print_int(_switch_variable_' + str(var).replace('$','') + '_,' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
                 self.fgcolor) + ',' + str(self.bgcolor) + ');')
@@ -163,7 +202,11 @@ class vga:
 
     ## Input int ##
     def inputint (self,var,message):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write(
             'print_string ("'+str(message)+'",'+str(self.fgcolor)+','+str(self.bgcolor)+'); _switch_variable_'+
             var.replace('$','')+'_ = read_int(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');'
@@ -172,7 +215,11 @@ class vga:
         file.close()
 
     def show_message (self,name,type,message):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         if type==0:
             file.write('''
             print_string ("[ ",{fgcolor},{bgcolor});
@@ -246,38 +293,70 @@ class time:
 
     ## Sleep in io ##
     def sleep (self,times):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write('sleep ('+str(times)+');')
         file.close()
 
     ## Start loop ##
     def startloop (self,start,end):
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
         ra = random.randint (1,1000000)
         self.ra = ra
-        file = open('core/kernel.tmp', 'a')
+        file = open(filename, 'a')
         file.write('unsigned long _loop_variable_{0} = {1};while (_loop_variable_{0} <= {2}){'.replace('{0}',str(ra)).replace('{1}',str(start)).replace('{2}',str(end)))
         file.close()
 
     ## End loop ##
     def endloop (self):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write('}')
         file.close()
 
     ## Counter for loop ##
     def counter (self,number):
-        file = open('core/kernel.tmp', 'a')
+        if sysinfo.mode == 'inside':
+            filename = 'core/kernel.tmp'
+        else:
+            filename = 'core/kernel_switchs.h'
+        file = open(filename, 'a')
         file.write('_loop_variable_'+str(self.ra)+" = _loop_variable_"+str(self.ra)+' + '+str(number)+";")
         file.close()
 
 class switch:
+    def startswitch (self,var):
+        file = open('core/kernel.tmp', 'a')
+        file.write('''
+        switch ({var}){
+        '''.replace('{var}',"_switch_variable_"+var.replace("$","")+"_"))
+        file.close()
+
     def start(self,name):
         file = open('core/kernel_switchs.h', 'a')
         file.write('void _switch_function_'+name+"_ (char* args){")
         file.close()
 
+        sysinfo.mode = 'switch'
+
     def end (self):
         file = open('core/kernel_switchs.h', 'a')
+        file.write('}')
+        file.close()
+
+        sysinfo.mode = 'inside'
+
+    def endswitch (self):
+        file = open('core/kernel.tmp', 'a')
         file.write('}')
         file.close()
 
@@ -291,4 +370,14 @@ class switch:
                    .replace('{num}',str(num))
                    .replace('{name}',name)
                    )
+        file.close()
+
+    def startdefault (self):
+        file = open('core/kernel.tmp', 'a')
+        file.write('default:')
+        file.close()
+
+    def enddefault (self):
+        file = open('core/kernel.tmp', 'a')
+        file.write('break;')
         file.close()
