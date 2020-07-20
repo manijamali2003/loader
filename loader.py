@@ -42,6 +42,7 @@ class kernel:
     def __init__(self,name):
         self.name = name
 
+        if not os.path.isdir ('debug'): os.mkdir('debug')
         if os.path.isfile('core/kernel.tmp'): os.remove('core/kernel.tmp')
         if os.path.isfile('core/kernel_switchs.h'):
             os.remove('core/kernel_switchs.h')
@@ -100,9 +101,13 @@ void __stack_chk_fail(){} void kernel_entry()
             filename = 'core/kernel.tmp'
         else:
             filename = 'core/kernel_switchs.h'
+
+        if type=='char* ': value = '"'+value+'"'
         file = open(filename, 'a')
         file.write(type+' _switch_variable_'+name+"_ = "+value+";")
         file.close()
+
+
 
 ## VGA Driver ##
 class vga:
