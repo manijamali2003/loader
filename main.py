@@ -11,18 +11,7 @@ v.clear() ## Clear screen
 
 v.clear()
 v.show_message('distro',show_type.ok_start,'')
-
-a = address()
-
-a.add('com.app')
-a.write('Loader Os')
-a.save()
-
-a.open('com.app')
-a.write('Hey')
-a.append()
-
-v.addshow('com.app')
-
+t.sleep(10)
+v.println('Hello World!')
 k.generate() # Build the kernel ##
 k.run() ## Run the kernel ##

@@ -44,7 +44,7 @@ class kernel:
         ## kernel.c
         main_start = '''
 #include "kernel.h"
-void kernel_entry()
+void __stack_chk_fail(){} void kernel_entry()
 {
         '''
         main_end = '}'
@@ -67,8 +67,18 @@ void kernel_entry()
         kernel = kernel.split(' ')
         subprocess.call(kernel)
 
+        ## Compile utils ##
+        utils = 'gcc -m32 -c core/utils.c -o debug/utils.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
+        utils = utils.split(' ')
+        subprocess.call(utils)
+
+        ## Compile char ##
+        char = 'gcc -m32 -c core/char.c -o debug/char.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
+        char = char.split(' ')
+        subprocess.call(char)
+
         ## Link the kernel ##
-        link = 'ld -m elf_i386 -T core/linker.ld debug/kernel.o debug/boot.o -o debug/kernel.bin -nostdlib'
+        link = 'ld -m elf_i386 -T core/linker.ld debug/kernel.o debug/utils.o debug/char.o debug/boot.o -o debug/kernel.bin -nostdlib'
         link = link.split(' ')
         subprocess.call(link)
 

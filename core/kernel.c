@@ -1,6 +1,6 @@
 
 #include "kernel.h"
-void kernel_entry()
+void __stack_chk_fail(){} void kernel_entry()
 {
         init_vga (15,0);init_vga (15,0);
             print_string ("[ ",15,0);
@@ -8,4 +8,4 @@ void kernel_entry()
             print_string (" ] ",15,0);
             print_string ("Start distro process.",15,0);
             print_new_line(15,0);
-            char* _address_com_addr_app;_address_com_addr_app= "Loader Os";_address_com_addr_app = "Loader OsHey";print_string(_address_com_addr_app,15,0);}
+            sleep (10);print_string("Hello World!",15,0);print_new_line(15,0);}
