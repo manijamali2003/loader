@@ -1,15 +1,8 @@
-from loader import kernel,vga
+from loader import kernel, vga
 
-k = kernel('MyOwnOs.bin')
-
-## Include driver ##
-v = vga()
-
-
-v.clear() # Clear screen #
-
-v.println('Hello I`m Loader Os written in Python.') # Print this word
-
-## Compile the kernel ##
-k.generate()
-k.run()
+k = kernel ("MyOwnOs.bin") # Your kernel filename
+v = vga() # Include VGA Driver in your kernel
+v.clear() # Clear the screen
+v.println ("Hello World!") # Print Hello World!
+k.generate() # Compile your kernel
+k.run() # Run your kernel

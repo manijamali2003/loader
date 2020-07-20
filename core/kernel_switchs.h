@@ -1,1 +1,0 @@
-void _switch_function_answer_ (char* args){print_string("Yes, it`s correct.",15,0);print_new_line(15,0);}
