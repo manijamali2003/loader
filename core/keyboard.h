@@ -4,7 +4,7 @@
 #define KEYBOARD_PORT 0x60
 
 
-#define KEY_A 0x1E
+#define KEY_A 65
 #define KEY_B 0x30
 #define KEY_C 0x2E
 #define KEY_D 0x20
@@ -82,7 +82,6 @@
 #define KEY_SPACE 0x39
 #define KEY_TAB 0x0F
 #define KEY_UP 0x48
-
 
 #endif
 

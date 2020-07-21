@@ -1,10 +1,10 @@
-from loader import kernel,vga,time
+from loader import kernel,io,time
 import random
 
 k = kernel('MyOwnOs.bin')
 
 ## Include drivers ##
-v = vga()   ## VGA Driver
+v = io()   ## VGA Driver
 t = time()  ## Time Driver
 ##
 

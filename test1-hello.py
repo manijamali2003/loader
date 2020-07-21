@@ -1,8 +1,10 @@
-from loader import kernel, vga
+from loader import kernel, io
 
 k = kernel ("MyOwnOs.bin") # Your kernel filename
-v = vga() # Include VGA Driver in your kernel
-v.clear() # Clear the screen
-v.println ("Hello World!") # Print Hello World!
+
+i = io() # Include VGA Driver in your kernel
+i.clear() # Clear the screen
+i.println ("Hello World!") # Print Hello World!
+
 k.generate() # Compile your kernel
 k.run() # Run your kernel

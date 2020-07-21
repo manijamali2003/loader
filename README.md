@@ -18,10 +18,10 @@ This means that you can deploy you project easily.
  - Create your own kernel starts with `Hello World!`
  
 ```python
-from loader import kernel, vga
+from loader import kernel, io
 
 k = kernel ("MyOwnOs.bin") # Your kernel filename
-v = vga() # Include VGA Driver in your kernel
+v = io() # Include VGA Driver in your kernel
 v.clear() # Clear the screen
 v.println ("Hello World!") # Print Hello World!
 k.generate() # Compile your kernel
