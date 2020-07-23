@@ -200,7 +200,7 @@ void print_int(int num,int fgcolor,int bgcolor)
   print_string(str_num,fgcolor,bgcolor);
 }
 
-int read_int(int bgcolor,int fgcolor)
+int read_int(int fgcolor,int bgcolor)
 {
   char ch = 0;
   char keycode = 0;
@@ -231,6 +231,41 @@ char getchar()
   keycode = get_input_keycode();
   sleep(CALC_SLEEP);
   return get_ascii_char(keycode);
+}
+
+// Reboot code https://codegolf.stackexchange.com/questions/107874/shut-down-the-computer
+
+void reboot (){
+asm (
+    "mov  $0x58,       %al\n"
+    "mov  $0xfee1dead, %ebx\n"
+    "mov  $0x28121969, %ecx\n"
+    "mov  $0x4321fedc, %edx\n"
+    "int  $0x80");
+}
+
+char read_char(int fgcolor,int bgcolor)
+{
+  char ch = 0;
+  char keycode = 0;
+  char data[32];
+  int index = 0;
+  do{
+    keycode = get_input_keycode();
+    if(keycode == KEY_ENTER){
+      data[index] = '\0';
+      print_new_line(15,0);
+      break;
+    }else{
+      ch = get_ascii_char(keycode);
+      print_char(ch,fgcolor,bgcolor);
+      data[index] = ch;
+      index++;
+    }
+    sleep(2);
+  } while(ch > 0);
+
+  return atoi(data);
 }
 
 #endif

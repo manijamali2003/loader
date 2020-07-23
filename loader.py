@@ -106,59 +106,79 @@ void __stack_chk_fail(){} void kernel_entry()
         ## Run the kernel ##
         subprocess.call(['qemu-system-i386', '-kernel', self.name])
 
-    def define (self,type,name,value):
-
-        if type=='char* ': value = '"'+value+'"'
+    def reboot (self):
         file = open(filename, 'a')
-        file.write(type+' _vfs_kvariable_'+name+"_ = "+value+";")
+        file.write('reboot();')
         file.close()
 
 
 class vfs:
-    def kvar (self,type,name,value):
+    def defv (self,type,name):
 
         ## Check types ##
         if type==0:
             type = 'char '
-            value = '\''+value+'\''
         elif type==1:
             type = 'char* '
-            value = '"'+value+'"'
         elif type==2:
             type = 'short '
-            value = str(value)
         elif type==3:
             type = 'int '
-            value = str (value)
         elif type==4:
             type = 'long '
-            value = str (value)
         elif type==5:
             type = 'float '
-            value = str (value)
         elif type==6:
             type = 'double '
-            value = str(value)
         elif type==7:
             type = 'unsigned short '
-            value = str (value)
         elif type==8:
             type = 'unsigned int '
-            value = str (value)
         elif type==9:
             type = 'unsigned long '
-            value = str (value)
         else:
             type = 'char* '
-            value = '"'+value+'"'
 
         ## Create virtual variable ##
-        vfs_kvar = type + '_vfs_kvariable_'+name+"_ = " + value+";"
+        vfs_kvar = type + '_vfs_kvariable_'+name+"_ ;"
 
         file = open(filename, 'a')
         file.write(vfs_kvar)
         file.close()
-        
+
+    def setv (self,type,name,value):
+
+        ## Check types ##
+        if type==0:
+            value = '\''+value+'\''
+        elif type==1:
+            value = '"'+value+'"'
+        elif type==2:
+            value = str(value)
+        elif type==3:
+            value = str (value)
+        elif type==4:
+            value = str (value)
+        elif type==5:
+            value = str (value)
+        elif type==6:
+            value = str(value)
+        elif type==7:
+            value = str (value)
+        elif type==8:
+            value = str (value)
+        elif type==9:
+            value = str (value)
+        else:
+            value = '"'+value+'"'
+
+        ## Create virtual variable ##
+        vfs_kvar = '_vfs_kvariable_'+name+"_ = " + value+";"
+
+        file = open(filename, 'a')
+        file.write(vfs_kvar)
+        file.close()
+
 ## VGA Driver ##
 class io:
 
@@ -227,11 +247,31 @@ class io:
                 self.fgcolor) + ',' + str(self.bgcolor) + ');')
         file.close()
 
-    ## Input int ##
-    def inputint (self,message):
+    ## Show integer variable ##
+    def showchar (self,var):
         file = open(filename, 'a')
         file.write(
-            'print_string ("'+str(message)+'",'+str(self.fgcolor)+','+str(self.bgcolor)+'); _input_memory_int_ = read_int(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');'
+            'print_char(' + var.replace('${','_vfs_kvariable_').replace("}","_") + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
+                self.fgcolor) + ',' + str(self.bgcolor) + ');')
+        file.close()
+
+    ## Read int ##
+    def readint (self,var,message):
+        file = open(filename, 'a')
+        file.write(
+            ('print_string ("'+str(message)+'",'+str(self.fgcolor)+','+str(self.bgcolor)+'); {name} = read_int(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+            .replace('{name}',var.replace("${",'_vfs_kvariable_').replace("}",'_'))
+        )
+
+        file.close()
+
+    ## Read Char ##
+    def readchar (self,var,message):
+        file = open(filename, 'a')
+        file.write(
+            ('print_string ("' + str(message) + '",' + str(self.fgcolor) + ',' + str(
+                self.bgcolor) + '); {name} = read_char(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+                .replace('{name}', var.replace("${", '_vfs_kvariable_').replace("}", '_'))
         )
 
         file.close()

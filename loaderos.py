@@ -16,7 +16,11 @@ time = time()
 fs = vfs()
 
 io.clear()
-fs.kvar(type.char,'a','A')
-io.showint('${a}')
+
+fs.defv(type.char,'a')
+
+io.readchar('${a}','Enter your name')
+io.showchar('${a}')
+
 k.generate()
 k.run()
