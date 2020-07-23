@@ -218,7 +218,7 @@ class io:
         if text.startswith ('${') and text.endswith ("}"):
             file = open(filename, 'a')
             file.write('print_string(' + text.replace('${','_vfs_kvariable_').replace("}","_") + ',' + str(
-                self.bgcolor) + ');print_new_line(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+                self.fgcolor) + ','+str(self.bgcolor)+');print_new_line(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
             file.close()
         else:
             file = open(filename, 'a')
@@ -271,6 +271,17 @@ class io:
         file.write(
             ('print_string ("' + str(message) + '",' + str(self.fgcolor) + ',' + str(
                 self.bgcolor) + '); {name} = read_char(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+                .replace('{name}', var.replace("${", '_vfs_kvariable_').replace("}", '_'))
+        )
+
+        file.close()
+
+    ## Read String ##
+    def read (self,var,message):
+        file = open(filename, 'a')
+        file.write(
+            ('print_string ("' + str(message) + '",' + str(self.fgcolor) + ',' + str(
+                self.bgcolor) + '); {name} = read_string(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
                 .replace('{name}', var.replace("${", '_vfs_kvariable_').replace("}", '_'))
         )
 
@@ -386,4 +397,36 @@ class time:
     def sleep (self,times):
         file = open(filename, 'a')
         file.write('sleep ('+str(times)+');')
+        file.close()
+
+class ttychar:
+    prompt = '/: '
+    bgcolor = color.black
+    fgcolor = color.white
+    start_timeout = 2
+    end_timeout = 2
+
+    def start (self):
+        file = open (filename,'a')
+        file.write ('while (1){sleep ({start_timeout});print_string ("{prompt}",{fgcolor},{bgcolor});char _vfs_kvariable_cmd_ = read_char ({fgcolor},{bgcolor});switch (_vfs_kvariable_cmd_){'
+                    .replace('{prompt}',self.prompt)
+                    .replace('{bgcolor}',str(self.bgcolor))
+                    .replace('{fgcolor}',str(self.fgcolor))
+                    .replace('{start_timeout}',str(self.start_timeout))
+        )
+        file.close()
+
+    def end (self):
+        file = open(filename, 'a')
+        file.write('}sleep({0});}'.replace("{0}",str(self.end_timeout)))
+        file.close()
+
+    def define (self,char):
+        file = open(filename,'a')
+        file.write('case \''+char+'\':')
+        file.close()
+
+    def enddef (self):
+        file = open(filename, 'a')
+        file.write('break;')
         file.close()

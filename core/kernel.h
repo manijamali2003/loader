@@ -244,28 +244,34 @@ asm (
     "int  $0x80");
 }
 
+// Created by Mani Jamali :
+// Read one charactor //
+
 char read_char(int fgcolor,int bgcolor)
 {
+
   char ch = 0;
   char keycode = 0;
-  char data[32];
-  int index = 0;
-  do{
+  char index = 0;
+
+  do {
     keycode = get_input_keycode();
-    if(keycode == KEY_ENTER){
-      data[index] = '\0';
+    if (keycode == KEY_ENTER){
       print_new_line(15,0);
       break;
-    }else{
+    }
+     else
+     {
       ch = get_ascii_char(keycode);
       print_char(ch,fgcolor,bgcolor);
-      data[index] = ch;
       index++;
-    }
-    sleep(2);
-  } while(ch > 0);
+     }
+     sleep(2);
+  }  while(ch > 0);
 
-  return atoi(data);
+  return ch;
 }
+
+// Read string //
 
 #endif
