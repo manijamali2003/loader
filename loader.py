@@ -7,7 +7,9 @@ import os,sys,subprocess,random,shutil
 
 filename = 'core/kernel.tmp'
 
-## Enums ##
+# Enums #
+
+# Color enum #
 class color:
     black = 0
     blue = 1
@@ -26,6 +28,7 @@ class color:
     yellow = 14
     white = 15
 
+# type enum #
 class type:
     char = 0
     string = 1
@@ -38,6 +41,7 @@ class type:
     uint = 8
     ulong = 9
 
+# show types enum #
 class show_type:
     ok_start = 0     # [ OK ] Start name process.
     ok_end = 1       # [ OK ] End name process.
@@ -50,7 +54,7 @@ class show_type:
     restart = 8
 
 
-## Kernel driver ##
+# Kernel driver #
 class kernel:
     name = ''
     def __init__(self,name):
@@ -59,12 +63,15 @@ class kernel:
         if not os.path.isdir ('debug'): os.mkdir('debug')
         if os.path.isfile('core/kernel.tmp'): os.remove('core/kernel.tmp')
 
+    # generate the kernel file #
     def generate(self):
-        ## kernel.c
+        # kernel.c
         main_start = '''
 #include "kernel.h"
 void __stack_chk_fail(){} void kernel_entry()
 {
+unsigned long _ki = 0;
+char* _kchar = "";
         '''
         main_end = '}'
 
@@ -73,128 +80,63 @@ void __stack_chk_fail(){} void kernel_entry()
         file.close()
 
         file = open ('core/kernel.c','w')
-        file.write(main_start+main_body+main_end) ## Write into kernel
+        file.write(main_start+main_body+main_end) # Write into kernel
         file.close()
 
-        ## Compile boot ##
+        # Compile boot #
         boot = 'as --32 core/boot.s -o debug/boot.o'
         boot = boot.split(' ')
         subprocess.call(boot)
 
-        ## Compile kernel ##
+        # Compile kernel #
         kernel = 'gcc -m32 -c core/kernel.c -o debug/kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
         kernel = kernel.split(' ')
         subprocess.call(kernel)
 
-        ## Compile utils ##
+        # Compile utils #
         utils = 'gcc -m32 -c core/utils.c -o debug/utils.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
         utils = utils.split(' ')
         subprocess.call(utils)
 
-        ## Compile char ##
+        # Compile char #
         char = 'gcc -m32 -c core/char.c -o debug/char.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
         char = char.split(' ')
         subprocess.call(char)
 
-        ## Link the kernel ##
+        # Link the kernel #
         link = 'ld -m elf_i386 -T core/linker.ld debug/kernel.o debug/utils.o debug/char.o debug/boot.o -o debug/kernel.bin -nostdlib'
         link = link.split(' ')
         subprocess.call(link)
 
         shutil.copyfile('debug/kernel.bin',self.name)
+        
+    # run the kernel file #
     def run(self):
-        ## Run the kernel ##
+        # Run the kernel #
         subprocess.call(['qemu-system-i386', '-kernel', self.name])
 
+    # reboot syscall command #
     def reboot (self):
         file = open(filename, 'a')
         file.write('reboot();')
         file.close()
 
-
-class vfs:
-    def defv (self,type,name):
-
-        ## Check types ##
-        if type==0:
-            type = 'char '
-        elif type==1:
-            type = 'char* '
-        elif type==2:
-            type = 'short '
-        elif type==3:
-            type = 'int '
-        elif type==4:
-            type = 'long '
-        elif type==5:
-            type = 'float '
-        elif type==6:
-            type = 'double '
-        elif type==7:
-            type = 'unsigned short '
-        elif type==8:
-            type = 'unsigned int '
-        elif type==9:
-            type = 'unsigned long '
-        else:
-            type = 'char* '
-
-        ## Create virtual variable ##
-        vfs_kvar = type + '_vfs_kvariable_'+name+"_ ;"
-
-        file = open(filename, 'a')
-        file.write(vfs_kvar)
-        file.close()
-
-    def setv (self,type,name,value):
-
-        ## Check types ##
-        if type==0:
-            value = '\''+value+'\''
-        elif type==1:
-            value = '"'+value+'"'
-        elif type==2:
-            value = str(value)
-        elif type==3:
-            value = str (value)
-        elif type==4:
-            value = str (value)
-        elif type==5:
-            value = str (value)
-        elif type==6:
-            value = str(value)
-        elif type==7:
-            value = str (value)
-        elif type==8:
-            value = str (value)
-        elif type==9:
-            value = str (value)
-        else:
-            value = '"'+value+'"'
-
-        ## Create virtual variable ##
-        vfs_kvar = '_vfs_kvariable_'+name+"_ = " + value+";"
-
-        file = open(filename, 'a')
-        file.write(vfs_kvar)
-        file.close()
-
-## VGA Driver ##
+# VGA Driver #
 class io:
 
     fgcolor = 15
     bgcolor = 0
 
-    ## Clear screen ##
+    # Clear screen #
     def clear (self):
-        ## Write into kernel ##
+        # Write into kernel #
         file = open (filename,'a')
         file.write ('init_vga ('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
-    ## Color ##
+    # Color #
     def color (self,bg,fg):
-        ## Write into kernel ##
+        # Write into kernel #
         file = open(filename, 'a')
         file.write('init_vga ('+str(fg)+','+str(bg)+');')
         file.close()
@@ -202,36 +144,37 @@ class io:
         self.bgcolor = bg
         self.fgcolor = fg
 
-    ## Print ##
+    # Print #
     def print (self,text):
-        if text.startswith("${") and text.endswith ("}"):
-            file = open(filename, 'a')
-            file.write('print_string('+text.replace('${','_vfs_kvariable_').replace("}","_")+ ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-            file.close()
-        else:
-            file = open(filename, 'a')
-            file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
-            file.close()
+        file = open(filename, 'a')
+        file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
+        file.close()
 
-    ## Print with line ##
+    # print blocks in vfs #
+    def print_data (self,block):
+        file = open(filename, 'a')
+        file.write('print_string(data['+str(block)+'],' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+        file.close()
+
+    # print addr in vfs #
+    def print_addr (self,block):
+        file = open(filename, 'a')
+        file.write('print_string(addr['+str(block)+'],' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
+        file.close()
+
+    # Print with line #
     def println (self,text):
-        if text.startswith ('${') and text.endswith ("}"):
-            file = open(filename, 'a')
-            file.write('print_string(' + text.replace('${','_vfs_kvariable_').replace("}","_") + ',' + str(
-                self.fgcolor) + ','+str(self.bgcolor)+');print_new_line(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-            file.close()
-        else:
-            file = open(filename, 'a')
-            file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
-            file.close()
+        file = open(filename, 'a')
+        file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
+        file.close()
 
-    ## Print a new line ##
+    # Print a new line #
     def newline (self):
         file = open(filename, 'a')
         file.write('print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
         file.close()
 
-    ## Print integer ##
+    # Print integer #
     def printint (self,num):
         file = open(filename, 'a')
         file.write(
@@ -239,23 +182,7 @@ class io:
                 self.fgcolor) + ',' + str(self.bgcolor) + ');')
         file.close()
 
-    ## Show integer variable ##
-    def showint (self,var):
-        file = open(filename, 'a')
-        file.write(
-            'print_int(' + var.replace('${','_vfs_kvariable_').replace("}","_") + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
-                self.fgcolor) + ',' + str(self.bgcolor) + ');')
-        file.close()
-
-    ## Show integer variable ##
-    def showchar (self,var):
-        file = open(filename, 'a')
-        file.write(
-            'print_char(' + var.replace('${','_vfs_kvariable_').replace("}","_") + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
-                self.fgcolor) + ',' + str(self.bgcolor) + ');')
-        file.close()
-
-    ## Read int ##
+    # Read int #
     def readint (self,var,message):
         file = open(filename, 'a')
         file.write(
@@ -265,7 +192,7 @@ class io:
 
         file.close()
 
-    ## Read Char ##
+    # Read Char #
     def readchar (self,var,message):
         file = open(filename, 'a')
         file.write(
@@ -276,7 +203,7 @@ class io:
 
         file.close()
 
-    ## Read String ##
+    # Read String #
     def read (self,var,message):
         file = open(filename, 'a')
         file.write(
@@ -390,10 +317,51 @@ class io:
                        )
         file.close()
 
-## Time driver ##
+# VFS #
+class vfs:
+    def blocks (self,blocknumber):
+        i = 0
+        file = open(filename, 'a')
+        file.write('unsigned long blocks = '+str(blocknumber)+";")
+        file.close()
+        file = open(filename, 'a')
+        file.write('char* addr[] = {')
+        file.close()
+        while i<=blocknumber-1:
+            file = open(filename, 'a')
+            file.write('"",')
+            file.close()
+            i+=1
+        file = open(filename, 'a')
+        file.write('};')
+        file.close()
+
+        i = 0
+
+        file = open(filename, 'a')
+        file.write('char* data[] = {')
+        file.close()
+        while i <= blocknumber - 1:
+            file = open(filename, 'a')
+            file.write('"",')
+            file.close()
+            i += 1
+        file = open(filename, 'a')
+        file.write('};')
+        file.close()
+
+    def addblock (self,block,addr,data):
+        file = open(filename, 'a')
+        file.write('''
+        addr[{block}]="{addr}";
+        data[{block}]="{data}";
+        '''.replace("{addr}",addr).replace("{block}",str(block)).replace("{data}",data))
+        file.close()
+
+# Time driver #
 class time:
 
-    ## Sleep in io ##
+    # Sleep in io #
     def sleep (self,times):
         file = open(filename, 'a')
         file.write('sleep ('+str(times)+');')
@@ -401,6 +369,8 @@ class time:
 
 class ttychar:
     prompt = '/: '
+    addr_prompt = 0
+    addr_fgcolor = color.light_blue
     bgcolor = color.black
     fgcolor = color.white
     start_timeout = 2
@@ -408,10 +378,12 @@ class ttychar:
 
     def start (self):
         file = open (filename,'a')
-        file.write ('while (1){sleep ({start_timeout});print_string ("{prompt}",{fgcolor},{bgcolor});char _vfs_kvariable_cmd_ = read_char ({fgcolor},{bgcolor});switch (_vfs_kvariable_cmd_){'
+        file.write ('while (1){sleep ({start_timeout});print_string ({addr},{addrfgcolor},{bgcolor});print_string ("{prompt}",{fgcolor},{bgcolor});char _vfs_kvariable_cmd_ = read_char ({fgcolor},{bgcolor});switch (_vfs_kvariable_cmd_){'
                     .replace('{prompt}',self.prompt)
+                    .replace('{addr}', "addr["+str(self.addr_prompt)+"]")
                     .replace('{bgcolor}',str(self.bgcolor))
                     .replace('{fgcolor}',str(self.fgcolor))
+                    .replace('{addrfgcolor}', str(self.addr_fgcolor))
                     .replace('{start_timeout}',str(self.start_timeout))
         )
         file.close()
