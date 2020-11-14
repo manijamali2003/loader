@@ -1,404 +1,208 @@
-'''
-    In the name of God, the Compassionate, the Merciful
-    Loader Os (c) 2020 Mani Jamali. All rights reserved
-'''
-
-import os,sys,subprocess,random,shutil
-
-filename = 'core/kernel.tmp'
-
-# Enums #
-
-# Color enum #
-class color:
-    black = 0
-    blue = 1
-    green = 2
-    cyan = 3
-    red = 4
-    magenta = 5
-    brown = 6
-    grey = 7
-    dark_grey = 8
-    light_blue = 9
-    light_green = 10
-    light_cyan = 11
-    light_red = 12
-    light_magenta = 13
-    yellow = 14
-    white = 15
-
-# type enum #
-class type:
-    char = 0
-    string = 1
-    short = 2
-    int = 3
-    long = 4
-    float = 5
-    double = 6
-    ushort = 7
-    uint = 8
-    ulong = 9
-
-# show types enum #
-class show_type:
-    ok_start = 0     # [ OK ] Start name process.
-    ok_end = 1       # [ OK ] End name process.
-    fail_start = 2   # [FAIL] Fail to start name process.
-    ok = 3           # name: message
-    error = 4        # name: error: message
-    warning = 5      # name: warning: message
-    power_on = 6
-    power_off = 7
-    restart = 8
+import subprocess as sub, hashlib, random, os
 
 
-# Kernel driver #
-class kernel:
-    name = ''
-    def __init__(self,name):
-        self.name = name
+def run():
+    sub.call(['qemu-system-i386', 'loader.bin'])
 
-        if not os.path.isdir ('debug'): os.mkdir('debug')
-        if os.path.isfile('core/kernel.tmp'): os.remove('core/kernel.tmp')
 
-    # generate the kernel file #
-    def generate(self):
-        # kernel.c
-        main_start = '''
-#include "kernel.h"
-void __stack_chk_fail(){} void kernel_entry()
-{
-unsigned long _ki = 0;
-char* _kchar = "";
-        '''
-        main_end = '}'
+def generate():
+    if not os.path.isfile("define.asm"): open('define.asm', 'w')
+    if not os.path.isfile("select.asm"):  open('select.asm', 'w')
+    if not os.path.isfile("execute.asm"): open('execute.asm', 'w')
+    f = open('loader.asm', 'w')
+    f.write('''
+org 0x7C00   ; add 0x7C00 to label addresses
+ bits 16      ; tell the assembler we want 16 bit code
 
-        file = open ('core/kernel.tmp','r')
-        main_body = file.read()
-        file.close()
+   mov ax, 0  ; set up segments
+   mov ds, ax
+   mov es, ax
+   mov ss, ax     ; setup stack
+   mov sp, 0x7C00 ; stack grows downwards from 0x7C00
 
-        file = open ('core/kernel.c','w')
-        file.write(main_start+main_body+main_end) # Write into kernel
-        file.close()
+ tty1:
 
-        # Compile boot #
-        boot = 'as --32 core/boot.s -o debug/boot.o'
-        boot = boot.split(' ')
-        subprocess.call(boot)
+   mov si, prompt
+   call print_string
 
-        # Compile kernel #
-        kernel = 'gcc -m32 -c core/kernel.c -o debug/kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
-        kernel = kernel.split(' ')
-        subprocess.call(kernel)
+   mov di, buffer
+   call get_string
 
-        # Compile utils #
-        utils = 'gcc -m32 -c core/utils.c -o debug/utils.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
-        utils = utils.split(' ')
-        subprocess.call(utils)
+   mov si, buffer
+   cmp byte [si], 0  ; blank line?
+   je tty1       ; yes, ignore it
 
-        # Compile char #
-        char = 'gcc -m32 -c core/char.c -o debug/char.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra'
-        char = char.split(' ')
-        subprocess.call(char)
+  %include 'define.asm'
 
-        # Link the kernel #
-        link = 'ld -m elf_i386 -T core/linker.ld debug/kernel.o debug/utils.o debug/char.o debug/boot.o -o debug/kernel.bin -nostdlib'
-        link = link.split(' ')
-        subprocess.call(link)
+   mov si,badcommand
+   call print_string 
+   jmp tty1  
 
-        shutil.copyfile('debug/kernel.bin',self.name)
-        
-    # run the kernel file #
-    def run(self):
-        # Run the kernel #
-        subprocess.call(['qemu-system-i386', '-kernel', self.name])
+  %include 'select.asm'
 
-    # reboot syscall command #
-    def reboot (self):
-        file = open(filename, 'a')
-        file.write('reboot();')
-        file.close()
+ badcommand db 'Bad command entered.', 0x0D, 0x0A, 0
+ prompt db '>', 0
+ %include 'execute.asm'
+ buffer times 64 db 0
 
-# VGA Driver #
-class io:
 
-    fgcolor = 15
-    bgcolor = 0
+ ; ================
+ ; calls start here
+ ; ================
 
-    # Clear screen #
-    def clear (self):
-        # Write into kernel #
-        file = open (filename,'a')
-        file.write ('init_vga ('+str(self.fgcolor)+','+str(self.bgcolor)+');')
-        file.close()
+ print_string:
+   lodsb        ; grab a byte from SI
 
-    # Color #
-    def color (self,bg,fg):
-        # Write into kernel #
-        file = open(filename, 'a')
-        file.write('init_vga ('+str(fg)+','+str(bg)+');')
-        file.close()
+   or al, al  ; logical or AL by itself
+   jz .done   ; if the result is zero, get out
 
-        self.bgcolor = bg
-        self.fgcolor = fg
+   mov ah, 0x0E
+   int 0x10      ; otherwise, print out the character!
 
-    # Print #
-    def print (self,text):
-        file = open(filename, 'a')
-        file.write('print_string("'+text+'",'+str(self.fgcolor)+','+str(self.bgcolor)+');')
-        file.close()
+   jmp print_string
 
-    # print blocks in vfs #
-    def print_data (self,block):
-        file = open(filename, 'a')
-        file.write('print_string(data['+str(block)+'],' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-        file.close()
+ .done:
+   ret
 
-    # print addr in vfs #
-    def print_addr (self,block):
-        file = open(filename, 'a')
-        file.write('print_string(addr['+str(block)+'],' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-        file.close()
+ get_string:
+   xor cl, cl
 
-    # Print with line #
-    def println (self,text):
-        file = open(filename, 'a')
-        file.write('print_string("' + text + '",'+str(self.fgcolor)+','+str(self.bgcolor)+');print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
-        file.close()
+ .loop:
+   mov ah, 0
+   int 0x16   ; wait for keypress
 
-    # Print a new line #
-    def newline (self):
-        file = open(filename, 'a')
-        file.write('print_new_line('+str(self.fgcolor)+','+str(self.bgcolor)+');')
-        file.close()
+   cmp al, 0x08    ; backspace pressed?
+   je .backspace   ; yes, handle it
 
-    # Print integer #
-    def printint (self,num):
-        file = open(filename, 'a')
-        file.write(
-            'print_int(' + str(num) + ',' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');print_new_line(' + str(
-                self.fgcolor) + ',' + str(self.bgcolor) + ');')
-        file.close()
+   cmp al, 0x0D  ; enter pressed?
+   je .done      ; yes, we're done
 
-    # Read int #
-    def readint (self,var,message):
-        file = open(filename, 'a')
-        file.write(
-            ('print_string ("'+str(message)+'",'+str(self.fgcolor)+','+str(self.bgcolor)+'); {name} = read_int(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-            .replace('{name}',var.replace("${",'_vfs_kvariable_').replace("}",'_'))
-        )
+   cmp cl, 0x3F  ; 63 chars inputted?
+   je .loop      ; yes, only let in backspace and enter
 
-        file.close()
+   mov ah, 0x0E
+   int 0x10      ; print out character
 
-    # Read Char #
-    def readchar (self,var,message):
-        file = open(filename, 'a')
-        file.write(
-            ('print_string ("' + str(message) + '",' + str(self.fgcolor) + ',' + str(
-                self.bgcolor) + '); {name} = read_char(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-                .replace('{name}', var.replace("${", '_vfs_kvariable_').replace("}", '_'))
-        )
+   stosb  ; put character in buffer
+   inc cl
+   jmp .loop
 
-        file.close()
+ .backspace:
+   cmp cl, 0	; beginning of string?
+   je .loop	; yes, ignore the key
 
-    # Read String #
-    def read (self,var,message):
-        file = open(filename, 'a')
-        file.write(
-            ('print_string ("' + str(message) + '",' + str(self.fgcolor) + ',' + str(
-                self.bgcolor) + '); {name} = read_string(' + str(self.fgcolor) + ',' + str(self.bgcolor) + ');')
-                .replace('{name}', var.replace("${", '_vfs_kvariable_').replace("}", '_'))
-        )
+   dec di
+   mov byte [di], 0	; delete character
+   dec cl		; decrement counter as well
 
-        file.close()
+   mov ah, 0x0E
+   mov al, 0x08
+   int 10h		; backspace on the screen
 
-    def show_message (self,name,type,message):
-        file = open(filename, 'a')
-        if type==0:
-            file.write('''
-            print_string ("[ ",{fgcolor},{bgcolor});
-            print_string ("OK",BRIGHT_GREEN,{bgcolor});
-            print_string (" ] ",{fgcolor},{bgcolor});
-            print_string ("Start {name} process.",{fgcolor},{bgcolor});
-            print_new_line({fgcolor},{bgcolor});
-            '''
-                       .replace('{bgcolor}',str(self.bgcolor))
-                       .replace('{name}',name)
-                       .replace('{fgcolor}', str(self.fgcolor))
-            )
-        elif type==1:
-            file.write('''
-            print_string ("[ ",{fgcolor},{bgcolor});
-            print_string ("OK",BRIGHT_GREEN,{bgcolor});
-            print_string (" ] ",{fgcolor},{bgcolor});
-            print_string ("End {name} process.",{fgcolor},{bgcolor});
-            print_new_line({fgcolor},{bgcolor});
-            '''
-                       .replace('{bgcolor}',str(self.bgcolor))
-                       .replace('{name}',name)
-                       .replace('{fgcolor}', str(self.fgcolor))
-            )
-        elif type==2:
-            file.write('''
-            print_string ("[",{fgcolor},{bgcolor});
-            print_string ("FAIL",RED,{bgcolor});
-            print_string ("] ",{fgcolor},{bgcolor});
-            print_string ("Fail to start {name} process.",{fgcolor},{bgcolor});
-            print_new_line({fgcolor},{bgcolor});
-            '''
-                       .replace('{bgcolor}',str(self.bgcolor))
-                       .replace('{name}',name)
-                       .replace('{fgcolor}',str(self.fgcolor))
-            )
-        elif type==3:
-            file.write('''
-            print_string ("{name}: {message}.",BRIGHT_GREEN,{bgcolor});
-            print_new_line({fgcolor},{bgcolor});
-            '''
-                       .replace('{bgcolor}',str(self.bgcolor))
-                       .replace('{name}',name)
-                       .replace('{message}',message)
-                       .replace('{fgcolor}',str(self.fgcolor))
-            )
-        elif type==4:
-            file.write('''
-            print_string ("{name}: error: {message}.",RED,{bgcolor});
-            print_new_line({fgcolor},{bgcolor});
-            '''
-                       .replace('{bgcolor}',str(self.bgcolor))
-                       .replace('{name}',name)
-                       .replace('{message}',message)
-                       .replace('{fgcolor}',str(self.fgcolor))
-            )
-        elif type==5:
-            file.write('''
-            print_string ("{name}: warning: {message}.",YELLOW,{bgcolor});
-            print_new_line({fgcolor},{bgcolor});
-            '''
-                       .replace('{bgcolor}',str(self.bgcolor))
-                       .replace('{name}',name)
-                       .replace('{message}',message)
-                       .replace('{fgcolor}',str(self.fgcolor))
-            )
-        elif type==6:
-            file.write('''
-                        print_string ("[ ",{fgcolor},{bgcolor});
-                        print_string ("OK",BRIGHT_GREEN,{bgcolor});
-                        print_string (" ] ",{fgcolor},{bgcolor});
-                        print_string ("Power on the kernel.",{fgcolor},{bgcolor});
-                        print_new_line({fgcolor},{bgcolor});
-                        '''
-                       .replace('{bgcolor}', str(self.bgcolor))
-                       .replace('{fgcolor}', str(self.fgcolor))
-                       )
-        elif type==7:
-            file.write('''
-                                    print_string ("[ ",{fgcolor},{bgcolor});
-                                    print_string ("OK",BRIGHT_GREEN,{bgcolor});
-                                    print_string (" ] ",{fgcolor},{bgcolor});
-                                    print_string ("Power off the kernel.",{fgcolor},{bgcolor});
-                                    print_new_line({fgcolor},{bgcolor});
-                                    '''
-                       .replace('{bgcolor}', str(self.bgcolor))
-                       .replace('{fgcolor}', str(self.fgcolor))
-                       )
-        elif type==8:
-            file.write('''
-                                    print_string ("[ ",{fgcolor},{bgcolor});
-                                    print_string ("OK",BRIGHT_GREEN,{bgcolor});
-                                    print_string (" ] ",{fgcolor},{bgcolor});
-                                    print_string ("Restart the kernel.",{fgcolor},{bgcolor});
-                                    print_new_line({fgcolor},{bgcolor});
-                                    '''
-                       .replace('{bgcolor}', str(self.bgcolor))
-                       .replace('{fgcolor}', str(self.fgcolor))
-                       )
-        file.close()
+   mov al, ' '
+   int 10h		; blank character out
 
-# VFS #
-class vfs:
-    def blocks (self,blocknumber):
-        i = 0
-        file = open(filename, 'a')
-        file.write('unsigned long blocks = '+str(blocknumber)+";")
-        file.close()
-        file = open(filename, 'a')
-        file.write('char* addr[] = {')
-        file.close()
-        while i<=blocknumber-1:
-            file = open(filename, 'a')
-            file.write('"",')
-            file.close()
-            i+=1
-        file = open(filename, 'a')
-        file.write('};')
-        file.close()
+   mov al, 0x08
+   int 10h		; backspace again
 
-        i = 0
+   jmp .loop	; go to the main loop
 
-        file = open(filename, 'a')
-        file.write('char* data[] = {')
-        file.close()
-        while i <= blocknumber - 1:
-            file = open(filename, 'a')
-            file.write('"",')
-            file.close()
-            i += 1
-        file = open(filename, 'a')
-        file.write('};')
-        file.close()
+ .done:
+   mov al, 0	; null terminator
+   stosb
 
-    def addblock (self,block,addr,data):
-        file = open(filename, 'a')
-        file.write('''
-        addr[{block}]="{addr}";
-        data[{block}]="{data}";
-        '''.replace("{addr}",addr).replace("{block}",str(block)).replace("{data}",data))
-        file.close()
+   mov ah, 0x0E
+   mov al, 0x0D
+   int 0x10
+   mov al, 0x0A
+   int 0x10		; newline
 
-# Time driver #
-class time:
+   ret
 
-    # Sleep in io #
-    def sleep (self,times):
-        file = open(filename, 'a')
-        file.write('sleep ('+str(times)+');')
-        file.close()
+ strcmp:
+ .loop:
+   mov al, [si]   ; grab a byte from SI
+   mov bl, [di]   ; grab a byte from DI
+   cmp al, bl     ; are they equal?
+   jne .notequal  ; nope, we're done.
 
-class ttychar:
-    prompt = '/: '
-    addr_prompt = 0
-    addr_fgcolor = color.light_blue
-    bgcolor = color.black
-    fgcolor = color.white
-    start_timeout = 2
-    end_timeout = 2
+   cmp al, 0  ; are both bytes (they were equal before) null?
+   je .done   ; yes, we're done.
 
-    def start (self):
-        file = open (filename,'a')
-        file.write ('while (1){sleep ({start_timeout});print_string ({addr},{addrfgcolor},{bgcolor});print_string ("{prompt}",{fgcolor},{bgcolor});char _vfs_kvariable_cmd_ = read_char ({fgcolor},{bgcolor});switch (_vfs_kvariable_cmd_){'
-                    .replace('{prompt}',self.prompt)
-                    .replace('{addr}', "addr["+str(self.addr_prompt)+"]")
-                    .replace('{bgcolor}',str(self.bgcolor))
-                    .replace('{fgcolor}',str(self.fgcolor))
-                    .replace('{addrfgcolor}', str(self.addr_fgcolor))
-                    .replace('{start_timeout}',str(self.start_timeout))
-        )
-        file.close()
+   inc di     ; increment DI
+   inc si     ; increment SI
+   jmp .loop  ; loop!
 
-    def end (self):
-        file = open(filename, 'a')
-        file.write('}sleep({0});}'.replace("{0}",str(self.end_timeout)))
-        file.close()
+ .notequal:
+   clc  ; not equal, clear the carry flag
+   ret
 
-    def define (self,char):
-        file = open(filename,'a')
-        file.write('case \''+char+'\':')
-        file.close()
+ .done: 	
+   stc  ; equal, set the carry flag
+   ret
 
-    def enddef (self):
-        file = open(filename, 'a')
-        file.write('break;')
-        file.close()
+   times 510-($-$$) db 0
+   dw 0AA55h ; some BIOSes require this signature
+    ''')
+    f.close()
+    sub.call(['nasm', 'loader.asm', '-o', 'loader.bin'])
+    os.remove('loader.asm')
+    if os.path.isfile("define.asm"): os.remove('define.asm')
+    if os.path.isfile("select.asm"): os.remove('select.asm')
+    if os.path.isfile("execute.asm"): os.remove('execute.asm')
+
+
+def print(value):
+    randvar = str(random.randint(1, 1000))
+    randhash = hashlib.md5(randvar.encode()).hexdigest()
+    f = open('select.asm', 'a')
+    f.write(f'''
+    mov si, kvar_{randhash}
+    call print_string
+
+    ''')
+    f.close()
+
+    f = open('execute.asm', 'a')
+    f.write(f'''
+    kvar_{randhash} db '{value}',0x0a,0x0d,0
+    ''')
+
+
+def asm(value):
+    f = open('select.asm', 'a')
+    f.write(f'''
+{value}
+    ''')
+    f.close()
+
+
+def end():
+    f = open('select.asm', 'a')
+    f.write(f'''
+  jmp tty1
+    ''')
+    f.close()
+
+
+def start(name):
+    f = open('define.asm', 'a')
+    f.write(f'''
+   mov si, buffer
+   mov di, cmd_{name}  ; "hi" command
+   call strcmp
+   jc .{name}
+''')
+    f.close()
+
+    f = open('select.asm', 'a')
+    f.write(f'''
+.{name}:
+    ''')
+    f.close()
+
+    f = open('execute.asm', 'a')
+    f.write(f'''
+ cmd_{name} db '{name}', 0
+     ''')
+    f.close()
